@@ -29,7 +29,7 @@ export default function Header({ onLogout }: HeaderProps) {
           className="p-2 hover:bg-neutral-100 rounded-full transition-colors"
         >
           <img
-            src="/assets/8fc3a9f9e6e740bbb1a6e0a76be1b3e8.jpg"
+            src="/assets/070f02ed3d3224ed0d573e17d37f4db3.jpg"
             alt="User avatar"
             className="w-8 h-8 rounded-full"
           />

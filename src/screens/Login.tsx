@@ -49,7 +49,7 @@ export default function Login() {
       {/* Desktop: Left panel with image */}
       <div className="hidden lg:flex lg:w-1/2 bg-accent-500 rounded-3xl items-center justify-center relative overflow-hidden p-8">
         <img
-          src="/assets/1d9f0fbce55347fd969d0a50b5a47c76.jpg"
+          src="/assets/0376a5e0ce359015c4630316e698fd05.jpg"
           alt="Login background"
           className="w-full h-full object-cover"
         />
