@@ -96,7 +96,7 @@ export default function Feed({ userId }: FeedProps) {
       {/* Desktop layout */}
       <div className="hidden lg:flex flex-1 gap-[30px] overflow-hidden">
         <main className="w-[664px] flex-shrink-0 flex flex-col gap-6 overflow-y-auto">
-          <StoryCarousel />
+          <StoryCarousel userId={userId} />
           <FeedList items={feedItems} loading={loading} error={loadError} onLike={handleLike} />
         </main>
         <GroupsRail userId={userId} />
@@ -105,7 +105,7 @@ export default function Feed({ userId }: FeedProps) {
       {/* Mobile layout */}
       <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
         <div className="px-4 py-4 border-b border-neutral-200 overflow-x-auto">
-          <StoryCarousel mobile />
+          <StoryCarousel userId={userId} mobile />
         </div>
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
           <FeedList items={feedItems} loading={loading} error={loadError} onLike={handleLike} />
