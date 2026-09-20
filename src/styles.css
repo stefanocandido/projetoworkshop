@@ -1,0 +1,159 @@
+/* Color Utility Classes */
+
+/* Backgrounds */
+.bg-accent-50 { background-color: var(--accent-50); }
+.bg-accent-100 { background-color: var(--accent-100); }
+.bg-accent-200 { background-color: var(--accent-200); }
+.bg-accent-300 { background-color: var(--accent-300); }
+.bg-accent-400 { background-color: var(--accent-400); }
+.bg-accent-500 { background-color: var(--accent-500); }
+.bg-accent-600 { background-color: var(--accent-600); }
+.bg-accent-700 { background-color: var(--accent-700); }
+
+.bg-secondary-50 { background-color: var(--secondary-50); }
+.bg-secondary-100 { background-color: var(--secondary-100); }
+.bg-secondary-500 { background-color: var(--secondary-500); }
+.bg-secondary-600 { background-color: var(--secondary-600); }
+.bg-secondary-700 { background-color: var(--secondary-700); }
+
+.bg-neutral-0 { background-color: var(--neutral-0); }
+.bg-neutral-50 { background-color: var(--neutral-50); }
+.bg-neutral-100 { background-color: var(--neutral-100); }
+.bg-neutral-200 { background-color: var(--neutral-200); }
+.bg-neutral-300 { background-color: var(--neutral-300); }
+
+.bg-canvas { background-color: var(--bg-canvas); }
+.bg-surface { background-color: var(--bg-surface); }
+.bg-error { background-color: var(--error); }
+
+/* Text Colors */
+.text-accent-500 { color: var(--accent-500); }
+.text-accent-600 { color: var(--accent-600); }
+.text-accent-700 { color: var(--accent-700); }
+
+.text-secondary-500 { color: var(--secondary-500); }
+.text-secondary-700 { color: var(--secondary-700); }
+
+.text-neutral-0 { color: var(--neutral-0); }
+.text-neutral-50 { color: var(--neutral-50); }
+.text-neutral-300 { color: var(--neutral-300); }
+.text-neutral-400 { color: var(--neutral-400); }
+.text-neutral-500 { color: var(--neutral-500); }
+.text-neutral-600 { color: var(--neutral-600); }
+.text-neutral-700 { color: var(--neutral-700); }
+.text-neutral-900 { color: var(--neutral-900); }
+
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-error { color: var(--error); }
+
+/* Border Colors */
+.border-accent-300 { border-color: var(--accent-300); }
+.border-accent-500 { border-color: var(--accent-500); }
+
+.border-neutral-200 { border-color: var(--neutral-200); }
+.border-neutral-300 { border-color: var(--neutral-300); }
+
+/* Button Styles */
+.btn-primary {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent-500);
+  color: var(--neutral-900);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-600);
+}
+
+.btn-primary:active {
+  background-color: var(--accent-700);
+}
+
+.btn-primary:disabled {
+  background-color: var(--neutral-400);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--secondary-500);
+  color: var(--neutral-900);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-600);
+}
+
+.btn-secondary:active {
+  background-color: var(--secondary-700);
+}
+
+.btn-secondary:disabled {
+  background-color: var(--neutral-400);
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--neutral-900);
+  border: 2px solid var(--neutral-300);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  background-color: var(--neutral-50);
+}
+
+.btn-outline:active {
+  background-color: var(--neutral-100);
+}
+
+.btn-outline:disabled {
+  border-color: var(--neutral-200);
+  color: var(--neutral-400);
+  cursor: not-allowed;
+}
+
+/* Input Styles */
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--neutral-300);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background-color: var(--neutral-0);
+  color: var(--neutral-900);
+  transition: all 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--neutral-500);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(61, 188, 168, 0.1);
+}
+
+/* Hover Utilities */
+.hover\:bg-neutral-50:hover { background-color: var(--neutral-50); }
+.hover\:bg-neutral-100:hover { background-color: var(--neutral-100); }
+.hover\:text-accent-600:hover { color: var(--accent-600); }
