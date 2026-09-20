@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 
 interface SearchProps {
@@ -13,52 +13,52 @@ interface ProfileResult {
   isFollowing: boolean
 }
 
-interface PostResult {
+interface GroupResult {
   id: string
-  authorName: string
-  body: string
+  name: string
+  coverUrl: string
+  membersCount: number
 }
 
 export default function Search({ userId }: SearchProps) {
   const [query, setQuery] = useState('')
+  const [tab, setTab] = useState<'pessoas' | 'grupos'>('pessoas')
   const [profiles, setProfiles] = useState<ProfileResult[]>([])
-  const [posts, setPosts] = useState<PostResult[]>([])
-  const [loading, setLoading] = useState(false)
-  const [searched, setSearched] = useState(false)
+  const [groups, setGroups] = useState<GroupResult[]>([])
+  const [recents, setRecents] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const trimmed = query.trim()
-    if (trimmed.length < 2) {
-      setProfiles([])
-      setPosts([])
-      setSearched(false)
-      return
-    }
+    loadAll()
+    loadRecents()
+  }, [])
 
-    const timeout = setTimeout(() => runSearch(trimmed), 400)
+  useEffect(() => {
+    const term = query.trim()
+    if (term.length < 2) return
+    const timeout = setTimeout(() => {
+      supabase.from('search_history').insert({ user_id: userId, query: term }).then(() => loadRecents())
+    }, 800)
     return () => clearTimeout(timeout)
-  }, [query])
+  }, [query, userId])
 
-  const runSearch = async (term: string) => {
+  const loadAll = async () => {
     setLoading(true)
-    setSearched(true)
-
-    const [profilesRes, postsRes] = await Promise.all([
+    const [profilesRes, groupsRes] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, name, handle, avatar_url, follows!follows_following_id_fkey(follower_id)')
-        .or(`name.ilike.%${term}%,handle.ilike.%${term}%`)
         .neq('id', userId)
-        .limit(15),
+        .limit(50),
       supabase
-        .from('posts')
-        .select('id, body, author:profiles!posts_author_id_fkey(name)')
+        .from('groups')
+        .select('id, name, avatar_url, members_count')
+        .eq('privacy', 'PUBLIC')
         .is('deleted_at', null)
-        .ilike('body', `%${term}%`)
-        .limit(15),
+        .limit(50),
     ])
 
-    if (!profilesRes.error && profilesRes.data) {
+    if (profilesRes.data) {
       setProfiles(
         profilesRes.data.map((p: any) => ({
           id: p.id,
@@ -70,97 +70,167 @@ export default function Search({ userId }: SearchProps) {
       )
     }
 
-    if (!postsRes.error && postsRes.data) {
-      setPosts(
-        postsRes.data.map((p: any) => ({
-          id: p.id,
-          authorName: p.author?.name ?? 'Usuário',
-          body: p.body,
+    if (groupsRes.data) {
+      setGroups(
+        groupsRes.data.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          coverUrl: g.avatar_url ?? `https://picsum.photos/seed/${g.id}/300/200`,
+          membersCount: g.members_count ?? 0,
         }))
       )
     }
 
     setLoading(false)
-    await supabase.from('search_history').insert({ user_id: userId, query: term })
   }
 
-  const toggleFollow = async (profileId: string, isFollowing: boolean) => {
-    setProfiles(list =>
-      list.map(p => (p.id === profileId ? { ...p, isFollowing: !isFollowing } : p))
-    )
+  const loadRecents = async () => {
+    const { data } = await supabase
+      .from('search_history')
+      .select('query')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20)
 
+    const unique: string[] = []
+    for (const row of data ?? []) {
+      if (!unique.includes(row.query)) unique.push(row.query)
+      if (unique.length === 4) break
+    }
+    setRecents(unique)
+  }
+
+  const q = query.trim().toLowerCase()
+  const filteredPeople = useMemo(
+    () => profiles.filter(p => !q || p.name.toLowerCase().includes(q) || p.handle.toLowerCase().includes(q)),
+    [profiles, q]
+  )
+  const filteredGroups = useMemo(
+    () => groups.filter(g => !q || g.name.toLowerCase().includes(q)),
+    [groups, q]
+  )
+
+  const toggleFollow = async (profileId: string, isFollowing: boolean) => {
+    setProfiles(list => list.map(p => (p.id === profileId ? { ...p, isFollowing: !isFollowing } : p)))
     if (isFollowing) {
       await supabase.from('follows').delete().match({ follower_id: userId, following_id: profileId })
     } else {
       const { error } = await supabase.from('follows').insert({ follower_id: userId, following_id: profileId })
-      if (error) {
-        setProfiles(list =>
-          list.map(p => (p.id === profileId ? { ...p, isFollowing } : p))
-        )
-      }
+      if (error) setProfiles(list => list.map(p => (p.id === profileId ? { ...p, isFollowing } : p)))
     }
   }
 
+  const noResults = tab === 'pessoas' ? filteredPeople.length === 0 : filteredGroups.length === 0
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">Buscar</h1>
+    <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4 lg:py-0 lg:pt-0 pb-20 lg:pb-6">
+      <div className="max-w-3xl mx-auto">
+        <div className="relative">
+          <input
+            type="search"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="O que deseja fazer de bom hoje?"
+            className="input h-14 pl-[52px]"
+            autoFocus
+          />
+          <span className="absolute inset-y-0 left-[18px] flex items-center text-neutral-500">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.2-3.2" />
+            </svg>
+          </span>
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              aria-label="Limpar busca"
+              className="absolute top-1.5 right-1.5 w-11 h-11 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6 18 18M18 6 6 18" />
+              </svg>
+            </button>
+          )}
+        </div>
 
-        <input
-          type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Buscar pessoas ou publicações..."
-          className="input mb-8"
-          autoFocus
-        />
-
-        {loading && <p className="text-center text-neutral-500 py-8">Buscando...</p>}
-
-        {!loading && searched && profiles.length === 0 && posts.length === 0 && (
-          <p className="text-center text-neutral-500 py-8">Nenhum resultado para "{query}".</p>
+        {recents.length > 0 && (
+          <div className="mt-[18px] flex items-center gap-2.5 flex-wrap">
+            <span className="text-[13px] text-neutral-500 mr-1">Recentes:</span>
+            {recents.map(r => (
+              <button
+                key={r}
+                onClick={() => setQuery(r)}
+                className="h-9 px-4 rounded-full border border-neutral-200 bg-white text-neutral-900 text-[13px] font-medium"
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         )}
 
-        {!loading && profiles.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-sm font-semibold text-neutral-600 uppercase mb-3">Pessoas</h2>
-            <div className="space-y-3">
-              {profiles.map(p => (
-                <div key={p.id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
-                  <img src={p.avatarUrl} alt={p.name} className="w-12 h-12 rounded-full object-cover" />
+        <div className="mt-5 flex items-center gap-2 h-11">
+          <button
+            onClick={() => setTab('pessoas')}
+            className={`h-11 px-1 mr-5 text-[15px] font-semibold border-b-2 ${
+              tab === 'pessoas' ? 'border-accent-500 text-neutral-900' : 'border-transparent text-neutral-600'
+            }`}
+          >
+            Pessoas · {filteredPeople.length}
+          </button>
+          <button
+            onClick={() => setTab('grupos')}
+            className={`h-11 px-1 text-[15px] font-semibold border-b-2 ${
+              tab === 'grupos' ? 'border-accent-500 text-neutral-900' : 'border-transparent text-neutral-600'
+            }`}
+          >
+            Grupos · {filteredGroups.length}
+          </button>
+        </div>
+
+        <div className="mt-2">
+          {loading ? (
+            <p className="text-center text-neutral-500 py-12">Carregando...</p>
+          ) : noResults ? (
+            <div className="flex flex-col items-center justify-center h-80 text-center">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B0B0B0" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.2-3.2" />
+              </svg>
+              <p className="mt-4 text-base font-semibold text-neutral-900">Nenhum resultado</p>
+              <p className="mt-1.5 text-sm text-neutral-600 max-w-[320px]">
+                Tente buscar por outro nome, hashtag ou interesse como corrida, yoga ou nutrição.
+              </p>
+            </div>
+          ) : tab === 'pessoas' ? (
+            <div className="flex flex-col gap-2.5">
+              {filteredPeople.map(p => (
+                <div key={p.id} className="flex items-center gap-3.5 bg-white rounded-xl px-4 py-3">
+                  <img src={p.avatarUrl} alt="" className="w-[52px] h-[52px] rounded-full object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-neutral-900 truncate">{p.name}</p>
-                    <p className="text-sm text-neutral-500 truncate">@{p.handle}</p>
+                    <p className="text-[15px] font-semibold text-neutral-900 truncate">{p.name}</p>
+                    <p className="mt-0.5 text-[13px] text-neutral-500 truncate">@{p.handle}</p>
                   </div>
                   <button
                     onClick={() => toggleFollow(p.id, p.isFollowing)}
-                    className={p.isFollowing ? 'btn-outline' : 'btn-primary'}
+                    className="flex-shrink-0 h-[38px] px-4 rounded-full border border-neutral-200 text-neutral-900 text-[13px] font-semibold"
                   >
                     {p.isFollowing ? 'Seguindo' : 'Seguir'}
                   </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {!loading && posts.length > 0 && (
-          <div>
-            <h2 className="text-sm font-semibold text-neutral-600 uppercase mb-3">Publicações</h2>
-            <div className="space-y-3">
-              {posts.map(p => (
-                <div key={p.id} className="p-4 bg-white rounded-lg border border-neutral-200">
-                  <p className="font-semibold text-neutral-900 mb-1">{p.authorName}</p>
-                  <p className="text-neutral-700">{p.body}</p>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredGroups.map(g => (
+                <div key={g.id} className="bg-white rounded-2xl p-3">
+                  <img src={g.coverUrl} alt="" className="w-full h-24 object-cover rounded-[14px]" />
+                  <p className="mt-3 text-sm font-semibold text-neutral-900 leading-5">{g.name}</p>
+                  <p className="mt-1.5 text-[13px] text-neutral-600">{g.membersCount} membros</p>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {!searched && (
-          <p className="text-center text-neutral-500 py-8">Digite pelo menos 2 letras para buscar.</p>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

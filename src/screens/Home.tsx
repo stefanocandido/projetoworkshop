@@ -43,7 +43,7 @@ export default function Home({ onLogout, userId }: HomeProps) {
         {view === 'discover' && <Search userId={userId} />}
         {view === 'messages' && <Messages userId={userId} />}
         {view === 'groups' && <Groups userId={userId} />}
-        {view === 'profile' && <Profile userId={userId} />}
+        {view === 'profile' && <Profile userId={userId} onNavigate={setView} />}
         {view === 'settings' && <Settings userId={userId} onLogout={onLogout} />}
       </div>
 

@@ -11,6 +11,7 @@ interface ConversationItem {
   otherAvatar: string
   lastMessage: string
   lastAt: string
+  unreadCount: number
 }
 
 interface ChatMessage {
@@ -23,7 +24,7 @@ interface ChatMessage {
 export default function Messages({ userId }: MessagesProps) {
   const [conversations, setConversations] = useState<ConversationItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeConversation, setActiveConversation] = useState<{ id: string; name: string } | null>(null)
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [showNewChat, setShowNewChat] = useState(false)
@@ -35,7 +36,7 @@ export default function Messages({ userId }: MessagesProps) {
 
     const { data: myRows } = await supabase
       .from('conversation_participants')
-      .select('conversation_id')
+      .select('conversation_id, last_read_at')
       .eq('user_id', userId)
       .is('left_at', null)
 
@@ -45,22 +46,29 @@ export default function Messages({ userId }: MessagesProps) {
       setLoading(false)
       return
     }
+    const lastReadByConv = new Map((myRows ?? []).map((r: any) => [r.conversation_id, r.last_read_at]))
 
-    const { data: others } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id, user_id, profiles(name, avatar_url)')
-      .in('conversation_id', ids)
-      .neq('user_id', userId)
-
-    const { data: lastMessages } = await supabase
-      .from('messages')
-      .select('conversation_id, body, sent_at')
-      .in('conversation_id', ids)
-      .order('sent_at', { ascending: false })
+    const [{ data: others }, { data: allMessages }] = await Promise.all([
+      supabase
+        .from('conversation_participants')
+        .select('conversation_id, user_id, profiles(name, avatar_url)')
+        .in('conversation_id', ids)
+        .neq('user_id', userId),
+      supabase
+        .from('messages')
+        .select('conversation_id, body, sent_at, sender_id')
+        .in('conversation_id', ids)
+        .order('sent_at', { ascending: false }),
+    ])
 
     const lastByConv = new Map<string, { body: string; sent_at: string }>()
-    for (const m of lastMessages ?? []) {
+    const unreadByConv = new Map<string, number>()
+    for (const m of allMessages ?? []) {
       if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m)
+      const lastRead = lastReadByConv.get(m.conversation_id)
+      if (m.sender_id !== userId && (!lastRead || m.sent_at > lastRead)) {
+        unreadByConv.set(m.conversation_id, (unreadByConv.get(m.conversation_id) ?? 0) + 1)
+      }
     }
 
     const items: ConversationItem[] = (others ?? []).map((o: any) => {
@@ -71,6 +79,7 @@ export default function Messages({ userId }: MessagesProps) {
         otherAvatar: o.profiles?.avatar_url ?? `https://picsum.photos/seed/${o.user_id}/100/100`,
         lastMessage: last?.body ?? 'Nenhuma mensagem ainda',
         lastAt: last?.sent_at ?? '',
+        unreadCount: unreadByConv.get(o.conversation_id) ?? 0,
       }
     })
 
@@ -83,8 +92,8 @@ export default function Messages({ userId }: MessagesProps) {
     loadConversations()
   }, [loadConversations])
 
-  const openConversation = async (id: string, name: string) => {
-    setActiveConversation({ id, name })
+  const openConversation = async (id: string) => {
+    setActiveId(id)
     const { data } = await supabase
       .from('messages')
       .select('id, sender_id, body, sent_at')
@@ -92,16 +101,18 @@ export default function Messages({ userId }: MessagesProps) {
       .order('sent_at', { ascending: true })
 
     setMessages((data ?? []).map((m: any) => ({ id: m.id, senderId: m.sender_id, body: m.body, sentAt: m.sent_at })))
+    await supabase.from('conversation_participants').update({ last_read_at: new Date().toISOString() }).match({ conversation_id: id, user_id: userId })
+    setConversations(list => list.map(c => (c.id === id ? { ...c, unreadCount: 0 } : c)))
   }
 
   const sendMessage = async () => {
-    if (!draft.trim() || !activeConversation) return
+    if (!draft.trim() || !activeId) return
     const body = draft.trim()
     setDraft('')
 
     const { data, error } = await supabase
       .from('messages')
-      .insert({ conversation_id: activeConversation.id, sender_id: userId, body })
+      .insert({ conversation_id: activeId, sender_id: userId, body })
       .select('id, sender_id, body, sent_at')
       .single()
 
@@ -113,7 +124,7 @@ export default function Messages({ userId }: MessagesProps) {
 
   const startNewChat = async () => {
     setNewChatError(null)
-    const handle = handleInput.trim().toLowerCase()
+    const handle = handleInput.trim().toLowerCase().replace(/^@/, '')
     if (!handle) return
 
     const { data: target } = await supabase.from('profiles').select('id, name').eq('handle', handle).maybeSingle()
@@ -126,11 +137,7 @@ export default function Messages({ userId }: MessagesProps) {
       return
     }
 
-    const { data: myRows } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .eq('user_id', userId)
-
+    const { data: myRows } = await supabase.from('conversation_participants').select('conversation_id').eq('user_id', userId)
     const myIds = (myRows ?? []).map((r: any) => r.conversation_id)
     let existingId: string | null = null
 
@@ -149,16 +156,12 @@ export default function Messages({ userId }: MessagesProps) {
     if (existingId) {
       setShowNewChat(false)
       setHandleInput('')
-      openConversation(existingId, target.name)
+      await loadConversations()
+      openConversation(existingId)
       return
     }
 
-    const { data: conv, error: convError } = await supabase
-      .from('conversations')
-      .insert({ is_group: false })
-      .select('id')
-      .single()
-
+    const { data: conv, error: convError } = await supabase.from('conversations').insert({ is_group: false }).select('id').single()
     if (convError || !conv) {
       setNewChatError('Não foi possível criar a conversa.')
       return
@@ -171,92 +174,114 @@ export default function Messages({ userId }: MessagesProps) {
 
     setShowNewChat(false)
     setHandleInput('')
-    openConversation(conv.id, target.name)
+    await loadConversations()
+    openConversation(conv.id)
   }
 
-  if (activeConversation) {
-    return (
-      <div className="flex-1 flex flex-col overflow-hidden pb-16 lg:pb-0">
-        <div className="px-4 py-3 border-b border-neutral-200 flex items-center gap-3">
-          <button onClick={() => setActiveConversation(null)} className="text-accent-500 font-semibold">
-            ← Voltar
-          </button>
-          <h2 className="font-semibold text-neutral-900">{activeConversation.name}</h2>
-        </div>
+  const active = conversations.find(c => c.id === activeId) ?? null
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {messages.map(m => (
-            <div
-              key={m.id}
-              className={`max-w-[75%] px-4 py-2 rounded-2xl ${
-                m.senderId === userId ? 'bg-accent-500 text-neutral-900 ml-auto' : 'bg-neutral-100 text-neutral-900'
+  const ListPane = (
+    <div className="w-full lg:w-[340px] flex-shrink-0 lg:border-r border-neutral-200 flex flex-col">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+        <p className="text-lg font-bold text-neutral-900">Conversas</p>
+        <button onClick={() => setShowNewChat(true)} aria-label="Nova conversa" className="w-9 h-9 flex items-center justify-center rounded-full text-accent-700 hover:bg-accent-50">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+      </div>
+
+      {showNewChat && (
+        <div className="mx-4 mb-3 p-3 bg-neutral-50 rounded-xl">
+          <input
+            value={handleInput}
+            onChange={e => setHandleInput(e.target.value)}
+            placeholder="@handle da pessoa"
+            className="input h-10 text-sm"
+          />
+          <div className="flex gap-2 mt-2">
+            <button onClick={startNewChat} className="btn-primary h-9 text-xs flex-1">Iniciar</button>
+            <button onClick={() => setShowNewChat(false)} className="btn-outline h-9 text-xs flex-1">Cancelar</button>
+          </div>
+          {newChatError && <p className="text-error text-xs mt-1.5">{newChatError}</p>}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <p className="text-center text-neutral-500 py-8 text-sm">Carregando...</p>
+        ) : conversations.length === 0 ? (
+          <p className="text-center text-neutral-500 py-8 text-sm px-4">Nenhuma conversa ainda. Toque em + para começar.</p>
+        ) : (
+          conversations.map(c => (
+            <button
+              key={c.id}
+              onClick={() => openConversation(c.id)}
+              className={`flex items-center gap-3 w-full px-4 py-3 text-left ${c.id === activeId ? 'bg-neutral-50' : 'bg-white'}`}
+            >
+              <img src={c.otherAvatar} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-semibold text-neutral-900 truncate">{c.otherName}</span>
+                <span className="block mt-0.5 text-[13px] text-neutral-500 truncate">{c.lastMessage}</span>
+              </span>
+              {c.unreadCount > 0 && (
+                <span className="flex-shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-accent-500 text-neutral-900 text-[11px] font-bold flex items-center justify-center">
+                  {c.unreadCount}
+                </span>
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  )
+
+  const ChatPane = active ? (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-3 px-4 lg:px-6 py-3.5 border-b border-neutral-200 flex-shrink-0">
+        <button onClick={() => setActiveId(null)} className="lg:hidden text-accent-700 font-semibold">←</button>
+        <img src={active.otherAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+        <p className="text-[15px] font-semibold text-neutral-900">{active.otherName}</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-5 flex flex-col gap-2.5">
+        {messages.map(m => (
+          <div key={m.id} className={`flex ${m.senderId === userId ? 'justify-end' : 'justify-start'}`}>
+            <span
+              className={`max-w-[75%] lg:max-w-[60%] px-4 py-2.5 rounded-2xl text-sm leading-5 ${
+                m.senderId === userId ? 'bg-accent-500 text-neutral-900' : 'bg-neutral-100 text-neutral-900'
               }`}
             >
               {m.body}
-            </div>
-          ))}
-        </div>
-
-        <div className="p-4 border-t border-neutral-200 flex gap-2">
-          <input
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendMessage()}
-            placeholder="Escreva uma mensagem..."
-            className="input"
-          />
-          <button onClick={sendMessage} className="btn-primary">Enviar</button>
-        </div>
+            </span>
+          </div>
+        ))}
       </div>
-    )
-  }
+
+      <div className="flex items-center gap-2.5 px-4 lg:px-6 py-4 border-t border-neutral-200 flex-shrink-0">
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && sendMessage()}
+          placeholder="Escreva uma mensagem"
+          className="flex-1 h-12 px-4 rounded-full bg-neutral-100 text-sm text-neutral-900 outline-none focus:ring-2 focus:ring-accent-300"
+        />
+        <button onClick={sendMessage} aria-label="Enviar mensagem" className="w-12 h-12 flex items-center justify-center rounded-full bg-accent-500 text-neutral-900 flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 20 20.5 12 4 4l2.5 7.2L4 20Z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  ) : (
+    <div className="hidden lg:flex flex-1 items-center justify-center text-neutral-500 text-sm">
+      Selecione uma conversa para começar
+    </div>
+  )
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-6 pb-20 lg:pb-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">Mensagens</h1>
-          <button onClick={() => setShowNewChat(true)} className="btn-primary">Nova conversa</button>
-        </div>
-
-        {showNewChat && (
-          <div className="mb-6 p-4 bg-white rounded-lg border border-neutral-200">
-            <label className="block text-sm font-semibold text-neutral-900 mb-2">@handle da pessoa</label>
-            <div className="flex gap-2">
-              <input
-                value={handleInput}
-                onChange={e => setHandleInput(e.target.value)}
-                placeholder="ex: admin_stefano"
-                className="input"
-              />
-              <button onClick={startNewChat} className="btn-primary">Iniciar</button>
-              <button onClick={() => setShowNewChat(false)} className="btn-outline">Cancelar</button>
-            </div>
-            {newChatError && <p className="text-error text-sm mt-2">{newChatError}</p>}
-          </div>
-        )}
-
-        {loading && <p className="text-center text-neutral-500 py-8">Carregando conversas...</p>}
-
-        {!loading && conversations.length === 0 && (
-          <p className="text-center text-neutral-500 py-8">Nenhuma conversa ainda. Clique em "Nova conversa" para começar.</p>
-        )}
-
-        <div className="space-y-2">
-          {conversations.map(c => (
-            <button
-              key={c.id}
-              onClick={() => openConversation(c.id, c.otherName)}
-              className="w-full flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200 hover:bg-neutral-50 text-left"
-            >
-              <img src={c.otherAvatar} alt={c.otherName} className="w-12 h-12 rounded-full object-cover" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-neutral-900 truncate">{c.otherName}</p>
-                <p className="text-sm text-neutral-500 truncate">{c.lastMessage}</p>
-              </div>
-            </button>
-          ))}
-        </div>
+    <div className="flex-1 overflow-hidden px-4 lg:px-6 py-4 lg:py-0 pb-20 lg:pb-6">
+      <div className="h-full max-w-5xl mx-auto bg-white rounded-2xl overflow-hidden flex">
+        {active ? <div className="hidden lg:flex">{ListPane}</div> : ListPane}
+        {ChatPane}
       </div>
     </div>
   )
