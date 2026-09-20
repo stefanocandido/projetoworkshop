@@ -5,41 +5,56 @@ interface SidebarProps {
   setActiveTab: (tab: View) => void
 }
 
-const NAV_ITEMS: { id: View; label: string; icon: string }[] = [
-  { id: 'home', label: 'Home', icon: 'home' },
-  { id: 'discover', label: 'Descobrir', icon: 'compass' },
-  { id: 'messages', label: 'Mensagens', icon: 'chat' },
-  { id: 'groups', label: 'Grupos', icon: 'users' },
-  { id: 'profile', label: 'Perfil', icon: 'user' },
-  { id: 'settings', label: 'Configurações', icon: 'settings' },
+const NAV_ITEMS: { id: View | 'create'; label: string }[] = [
+  { id: 'home', label: 'Início' },
+  { id: 'discover', label: 'Buscar' },
+  { id: 'messages', label: 'Mensagens' },
+  { id: 'create', label: 'Criar' },
+  { id: 'groups', label: 'Grupos' },
+  { id: 'profile', label: 'Perfil' },
+  { id: 'settings', label: 'Configurações' },
 ]
+
+function NavIcon({ id }: { id: View | 'create' }) {
+  const common = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (id) {
+    case 'home':
+      return <svg {...common}><path d="M3 10.5 12 3l9 7.5" /><path d="M5.5 9.6V20a1 1 0 0 0 1 1h3v-5.6h5V21h3a1 1 0 0 0 1-1V9.6" /></svg>
+    case 'discover':
+      return <svg {...common}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+    case 'messages':
+      return <svg {...common}><path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 9 9 0 0 1-3.9-.9L3.5 20.8l1.6-4.3a8.1 8.1 0 0 1-1.4-4.9A8.4 8.4 0 0 1 12.2 3.3 8.4 8.4 0 0 1 21 11.6Z" /></svg>
+    case 'create':
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 8.5v7M8.5 12h7" /></svg>
+    case 'groups':
+      return <svg {...common}><circle cx="9.2" cy="8.4" r="3.2" /><path d="M3.6 19.4a5.6 5.6 0 0 1 11.2 0" /><path d="M16.4 5.6a3.2 3.2 0 0 1 0 5.9" /><path d="M17.6 14.6a5.6 5.6 0 0 1 3 4.8" /></svg>
+    case 'profile':
+      return <svg {...common}><circle cx="12" cy="8" r="3.6" /><path d="M4.6 20.2a7.4 7.4 0 0 1 14.8 0" /></svg>
+    case 'settings':
+      return <svg {...common}><circle cx="12" cy="12" r="3.2" /><path d="M19.4 12c0-.4 0-.8-.1-1.2l2-1.5-2-3.4-2.3 1a7.6 7.6 0 0 0-2.1-1.2L14.5 3h-4l-.4 2.7a7.6 7.6 0 0 0-2.1 1.2l-2.3-1-2 3.4 2 1.5a7.5 7.5 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7.6 7.6 0 0 0 2.1 1.2l.4 2.7h4l.4-2.7a7.6 7.6 0 0 0 2.1-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z" /></svg>
+  }
+}
 
 export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
-    <aside className="w-60 bg-white border-r border-neutral-200 p-6 overflow-y-auto">
-      <nav className="space-y-2">
-        {NAV_ITEMS.map(item => (
+    <nav aria-label="Navegação principal" className="hidden lg:flex w-[252px] flex-shrink-0 self-start bg-white rounded-3xl p-3 flex-col gap-1">
+      {NAV_ITEMS.map(item => {
+        const isCreate = item.id === 'create'
+        const isActive = !isCreate && activeTab === item.id
+
+        return (
           <button
             key={item.id}
-            onClick={() => setActiveTab(item.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors font-medium ${
-              activeTab === item.id
-                ? 'bg-accent-500 text-neutral-900'
-                : 'text-neutral-700 hover:bg-neutral-100'
+            onClick={() => (isCreate ? window.alert('Criação de publicações chega em breve!') : setActiveTab(item.id as View))}
+            className={`flex items-center gap-3.5 h-12 px-4 rounded-full text-[15px] transition-colors ${
+              isActive ? 'bg-accent-500 text-neutral-900 font-semibold' : 'text-neutral-700 font-medium hover:bg-neutral-100'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {item.id === 'home' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4V3" />}
-              {item.id === 'discover' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5a4 4 0 100-8 4 4 0 000 8z" />}
-              {item.id === 'messages' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />}
-              {item.id === 'groups' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 19H9a6 6 0 016-6h.01" />}
-              {item.id === 'profile' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />}
-              {item.id === 'settings' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />}
-            </svg>
-            <span>{item.label}</span>
+            <NavIcon id={item.id} />
+            {item.label}
           </button>
-        ))}
-      </nav>
-    </aside>
+        )
+      })}
+    </nav>
   )
 }

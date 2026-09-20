@@ -5,37 +5,50 @@ interface TabBarProps {
   setActiveTab: (tab: View) => void
 }
 
-const NAV_ITEMS: { id: View; label: string; icon: string }[] = [
-  { id: 'home', label: 'Home', icon: 'home' },
-  { id: 'discover', label: 'Descobrir', icon: 'compass' },
-  { id: 'messages', label: 'Mensagens', icon: 'chat' },
-  { id: 'groups', label: 'Grupos', icon: 'users' },
-  { id: 'profile', label: 'Perfil', icon: 'user' },
-]
-
 export default function TabBar({ activeTab, setActiveTab }: TabBarProps) {
+  const iconProps = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-neutral-200 flex items-center justify-around">
-      {NAV_ITEMS.map(item => (
-        <button
-          key={item.id}
-          onClick={() => setActiveTab(item.id)}
-          className={`flex flex-col items-center gap-1 py-2 px-3 transition-colors ${
-            activeTab === item.id
-              ? 'text-accent-500'
-              : 'text-neutral-600 hover:text-neutral-900'
-          }`}
-        >
-          <svg className="w-6 h-6" fill={activeTab === item.id ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-            {item.id === 'home' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4V3" />}
-            {item.id === 'discover' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5a4 4 0 100-8 4 4 0 000 8z" />}
-            {item.id === 'messages' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />}
-            {item.id === 'groups' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 19H9a6 6 0 016-6h.01" />}
-            {item.id === 'profile' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />}
-          </svg>
-          <span className="text-xs font-medium">{item.label}</span>
-        </button>
-      ))}
-    </div>
+    <nav aria-label="Navegação principal" className="lg:hidden fixed bottom-0 left-0 right-0 h-[76px] bg-white border-t border-neutral-200 px-3 flex items-center justify-between">
+      <button
+        onClick={() => setActiveTab('home')}
+        aria-label="Início"
+        className={`w-14 h-11 flex items-center justify-center rounded-full ${activeTab === 'home' ? 'bg-accent-500 text-neutral-900' : 'text-neutral-600'}`}
+      >
+        <svg {...iconProps}><path d="M3 10.5 12 3l9 7.5" /><path d="M5.5 9.6V20a1 1 0 0 0 1 1h3v-5.6h5V21h3a1 1 0 0 0 1-1V9.6" /></svg>
+      </button>
+
+      <button
+        onClick={() => setActiveTab('discover')}
+        aria-label="Buscar"
+        className={`w-14 h-11 flex items-center justify-center rounded-full ${activeTab === 'discover' ? 'bg-accent-500 text-neutral-900' : 'text-neutral-600'}`}
+      >
+        <svg {...iconProps}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" /></svg>
+      </button>
+
+      <button
+        onClick={() => window.alert('Criação de publicações chega em breve!')}
+        aria-label="Criar"
+        className="w-[52px] h-[52px] flex items-center justify-center rounded-full border-[1.5px] border-neutral-300 text-neutral-900"
+      >
+        <svg {...iconProps}><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+
+      <button
+        onClick={() => setActiveTab('messages')}
+        aria-label="Mensagens"
+        className={`w-14 h-11 flex items-center justify-center rounded-full ${activeTab === 'messages' ? 'bg-accent-500 text-neutral-900' : 'text-neutral-600'}`}
+      >
+        <svg {...iconProps}><path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 9 9 0 0 1-3.9-.9L3.5 20.8l1.6-4.3a8.1 8.1 0 0 1-1.4-4.9A8.4 8.4 0 0 1 12.2 3.3 8.4 8.4 0 0 1 21 11.6Z" /></svg>
+      </button>
+
+      <button
+        onClick={() => setActiveTab('profile')}
+        aria-label="Perfil"
+        className={`w-14 h-11 flex items-center justify-center rounded-full ${activeTab === 'profile' ? 'bg-accent-500 text-neutral-900' : 'text-neutral-600'}`}
+      >
+        <svg {...iconProps}><circle cx="12" cy="8" r="3.6" /><path d="M4.6 20.2a7.4 7.4 0 0 1 14.8 0" /></svg>
+      </button>
+    </nav>
   )
 }

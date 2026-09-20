@@ -23,97 +23,65 @@ export default function FeedCard({
   onLike,
 }: FeedCardProps) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+    <article className="bg-white rounded-2xl p-5 shadow-sm">
       {/* Header */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img
-            src={avatar}
-            alt={author}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-          <div>
-            <h3 className="font-semibold text-neutral-900">{author}</h3>
-            <p className="text-sm text-neutral-500">{timestamp}</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <img src={avatar} alt="" className="w-11 h-11 rounded-full object-cover flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-semibold text-neutral-900 truncate">{author}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-neutral-500">
+            <svg width="17" height="11" viewBox="0 0 34 22" fill="none" stroke="currentColor" strokeWidth="5">
+              <circle cx="9.6" cy="11" r="6.7" />
+              <circle cx="21.4" cy="11" r="6.7" />
+            </svg>
+            {timestamp}
+          </p>
         </div>
-        <button className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
-          <svg className="w-5 h-5 text-neutral-500" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+        <button aria-label="Mais opções da publicação" className="w-11 h-11 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.5" />
+            <circle cx="12" cy="12" r="1.5" />
+            <circle cx="12" cy="19" r="1.5" />
           </svg>
         </button>
       </div>
 
       {/* Content */}
-      <div className="px-4 pb-4">
-        <p className="text-neutral-900">{content}</p>
-      </div>
+      <p className="mt-3.5 text-[15px] leading-6 text-neutral-900">{content}</p>
 
       {/* Image */}
-      <img
-        src={image}
-        alt="Post content"
-        className="w-full h-auto max-h-96 object-cover"
-      />
+      <img src={image} alt="" className="w-full h-auto max-h-96 object-cover rounded-2xl mt-4" />
 
-      {/* Engagement */}
-      <div className="p-4 border-t border-neutral-200">
-        <div className="flex items-center justify-between text-sm text-neutral-600 mb-4">
-          <span>{likes} curtidas</span>
-          <span>{comments} comentários</span>
-        </div>
+      {/* Actions */}
+      <div className="flex items-center gap-2.5 mt-4">
+        <button
+          onClick={onLike}
+          className={`flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-medium transition-colors ${
+            isLiked ? 'bg-accent-50 border-accent-300 text-accent-700' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+          }`}
+        >
+          <svg width="17" height="17" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19.8 6.8a4.4 4.4 0 0 0-6.3 0L12 8.3l-1.5-1.5a4.4 4.4 0 0 0-6.3 6.2l7.8 7.6 7.8-7.6a4.4 4.4 0 0 0 0-6.2Z" />
+          </svg>
+          {likes} curtidas
+        </button>
 
-        {/* Actions */}
-        <div className="flex gap-4">
-          <button
-            onClick={onLike}
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg transition-colors ${
-              isLiked
-                ? 'bg-accent-50 text-accent-600'
-                : 'hover:bg-neutral-100 text-neutral-700'
-            }`}
-          >
-            <svg
-              className="w-5 h-5"
-              fill={isLiked ? 'currentColor' : 'none'}
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-              />
-            </svg>
-            <span>Curtir</span>
-          </button>
+        <button className="flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-neutral-200 text-[13px] font-medium text-neutral-700 hover:bg-neutral-50">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 9 9 0 0 1-3.9-.9L3.5 20.8l1.6-4.3a8.1 8.1 0 0 1-1.4-4.9A8.4 8.4 0 0 1 12.2 3.3 8.4 8.4 0 0 1 21 11.6Z" />
+          </svg>
+          {comments} comentários
+        </button>
 
-          <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-neutral-100 transition-colors text-neutral-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-              />
-            </svg>
-            <span>Comentar</span>
-          </button>
-
-          <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-neutral-100 transition-colors text-neutral-700">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-              />
-            </svg>
-            <span>Compartilhar</span>
-          </button>
-        </div>
+        <button aria-label="Compartilhar publicação" className="w-11 h-11 flex items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 ml-auto">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="17.5" cy="6" r="2.6" />
+            <circle cx="6.5" cy="12" r="2.6" />
+            <circle cx="17.5" cy="18" r="2.6" />
+            <path d="m8.9 10.7 6.2-3.4M8.9 13.3l6.2 3.4" />
+          </svg>
+        </button>
       </div>
-    </div>
+    </article>
   )
 }

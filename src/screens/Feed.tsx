@@ -33,7 +33,7 @@ export default function Feed({ userId }: FeedProps) {
       .from('posts')
       .select(`
         id, body, created_at, likes_count, comments_count,
-        author:profiles!posts_author_id_fkey ( name, avatar_url ),
+        author:profiles!posts_author_id_fkey ( handle, avatar_url ),
         post_media ( order, media ( url ) ),
         likes ( user_id )
       `)
@@ -49,7 +49,7 @@ export default function Feed({ userId }: FeedProps) {
 
     const items: FeedItem[] = (data ?? []).map((post: any) => ({
       id: post.id,
-      author: post.author?.name ?? 'Usuário',
+      author: `@${post.author?.handle ?? 'usuario'}`,
       avatar: post.author?.avatar_url ?? `https://picsum.photos/seed/${post.id}/100/100`,
       timestamp: new Date(post.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
       content: post.body,
@@ -93,14 +93,12 @@ export default function Feed({ userId }: FeedProps) {
   return (
     <>
       {/* Desktop layout */}
-      <div className="hidden lg:block flex-1 overflow-y-auto border-x border-neutral-200 px-6 py-6">
-        <div className="mb-8">
+      <div className="hidden lg:flex flex-1 gap-[30px] overflow-hidden">
+        <main className="w-[664px] flex-shrink-0 flex flex-col gap-6 overflow-y-auto">
           <StoryCarousel />
-        </div>
-        <FeedList items={feedItems} loading={loading} error={loadError} onLike={handleLike} />
-      </div>
-      <div className="hidden lg:block">
-        <GroupsRail />
+          <FeedList items={feedItems} loading={loading} error={loadError} onLike={handleLike} />
+        </main>
+        <GroupsRail userId={userId} />
       </div>
 
       {/* Mobile layout */}
@@ -108,11 +106,11 @@ export default function Feed({ userId }: FeedProps) {
         <div className="px-4 py-4 border-b border-neutral-200 overflow-x-auto">
           <StoryCarousel mobile />
         </div>
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
           <FeedList items={feedItems} loading={loading} error={loadError} onLike={handleLike} />
         </div>
         <div className="px-4 py-4 pb-20 border-t border-neutral-200 overflow-x-auto">
-          <GroupsRail mobile />
+          <GroupsRail userId={userId} mobile />
         </div>
       </div>
     </>
@@ -151,7 +149,7 @@ function FeedList({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {items.map(item => (
         <FeedCard
           key={item.id}

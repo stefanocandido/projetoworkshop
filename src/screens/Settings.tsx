@@ -101,7 +101,7 @@ export default function Settings({ userId, onLogout }: SettingsProps) {
                 type="checkbox"
                 checked={prefs[t.key]}
                 onChange={() => toggle(t.key, t.column)}
-                className="w-5 h-5 accent-accent-500"
+                className="w-5 h-5" style={{ accentColor: 'var(--accent-500)' }}
               />
             </label>
           ))}

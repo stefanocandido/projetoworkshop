@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* A escala rounded-* nativa do Tailwind não bate com a escala radius-* do
+   design.md (ex.: rounded-3xl do Tailwind = 24px, radius-3xl do design.md =
+   32px). Sobrescrevendo as variáveis de tema do Tailwind v4 aqui, toda
+   classe rounded-* usada no app inteiro passa a resolver para o valor
+   correto do design system automaticamente — sem precisar trocar classe
+   por classe em cada componente. */
+@theme {
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+}
+
 :root {
   --accent-50: #EAF9F6;
   --accent-100: #CFF0EA;

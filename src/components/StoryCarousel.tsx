@@ -5,69 +5,63 @@ interface StoryCarouselProps {
   mobile?: boolean
 }
 
-interface StoryAuthor {
+interface StoryCard {
   authorId: string
   name: string
   avatarUrl: string
-  hasUnseenStory: boolean
+  imageUrl: string
 }
 
 export default function StoryCarousel({ mobile = false }: StoryCarouselProps) {
-  const [authors, setAuthors] = useState<StoryAuthor[]>([])
+  const [stories, setStories] = useState<StoryCard[]>([])
 
   useEffect(() => {
     const load = async () => {
       const { data, error } = await supabase
         .from('stories')
-        .select('author_id, author:profiles!stories_author_id_fkey ( name, avatar_url )')
+        .select('author_id, author:profiles!stories_author_id_fkey(name, avatar_url), media(url)')
         .eq('status', 'ACTIVE')
         .order('created_at', { ascending: false })
 
       if (error || !data) return
 
       const seen = new Set<string>()
-      const unique: StoryAuthor[] = []
+      const cards: StoryCard[] = []
       for (const row of data as any[]) {
         if (seen.has(row.author_id)) continue
         seen.add(row.author_id)
-        unique.push({
+        cards.push({
           authorId: row.author_id,
           name: row.author?.name ?? 'Usuário',
           avatarUrl: row.author?.avatar_url ?? `https://picsum.photos/seed/${row.author_id}/100/100`,
-          hasUnseenStory: true,
+          imageUrl: row.media?.[0]?.url ?? `https://picsum.photos/seed/story-${row.author_id}/300/400`,
         })
       }
-      setAuthors(unique)
+      setStories(cards)
     }
 
     load()
   }, [])
 
-  if (authors.length === 0) {
+  if (stories.length === 0) {
     return <p className="text-sm text-neutral-500">Nenhum story ativo no momento.</p>
   }
 
-  const avatarSize = mobile ? 'w-16 h-16' : 'w-16 h-16 md:w-20 md:h-20'
+  const cardSize = mobile ? 'w-24 h-32' : 'w-32 h-[174px]'
 
   return (
-    <div className={`flex overflow-x-auto pb-2 ${mobile ? 'gap-3' : 'gap-4'}`}>
-      {authors.map(story => (
-        <div key={story.authorId} className="flex-shrink-0 flex flex-col items-center gap-2 cursor-pointer">
-          <div
-            className={`relative rounded-full border-2 p-1 transition-colors ${
-              story.hasUnseenStory ? 'border-accent-500' : 'border-neutral-300'
-            } hover:opacity-80`}
-          >
-            <img
-              src={story.avatarUrl}
-              alt={story.name}
-              className={`${avatarSize} rounded-full object-cover`}
-            />
-          </div>
-          <span className="text-xs text-neutral-700 text-center max-w-16 truncate">
-            {story.name}
+    <div className="flex gap-2.5 overflow-x-auto pb-2">
+      {stories.map(story => (
+        <button
+          key={story.authorId}
+          className={`relative ${cardSize} flex-shrink-0 rounded-2xl overflow-hidden`}
+          aria-label={`Ver story de ${story.name}`}
+        >
+          <img src={story.imageUrl} alt="" className="w-full h-full object-cover" />
+          <span className="absolute left-2.5 bottom-2.5 block w-9 h-9 rounded-full p-0.5 bg-accent-500 box-border">
+            <img src={story.avatarUrl} alt="" className="w-full h-full object-cover rounded-full border-2 border-white box-border" />
           </span>
-        </div>
+        </button>
       ))}
     </div>
   )
