@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { timeAgo } from '../lib/utils'
 
 interface GroupsProps {
   userId: string
@@ -122,7 +123,7 @@ export default function Groups({ userId }: GroupsProps) {
           id: r.post_id,
           authorHandle: r.posts.author?.handle ?? 'usuario',
           body: r.posts.body,
-          createdAt: new Date(r.posts.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+          createdAt: timeAgo(r.posts.created_at),
         }))
     )
   }

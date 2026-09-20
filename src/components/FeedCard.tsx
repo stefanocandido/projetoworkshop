@@ -50,7 +50,7 @@ export default function FeedCard({
       <p className="mt-3.5 text-[15px] leading-6 text-neutral-900">{content}</p>
 
       {/* Image */}
-      <img src={image} alt="" className="w-full h-auto max-h-96 object-cover rounded-2xl mt-4" />
+      <img src={image} alt="" className="w-full h-80 object-cover rounded-2xl mt-4" />
 
       {/* Actions */}
       <div className="flex items-center gap-2.5 mt-4">

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { timeAgo } from '../lib/utils'
 import FeedCard from '../components/FeedCard'
 import StoryCarousel from '../components/StoryCarousel'
 import GroupsRail from '../components/GroupsRail'
@@ -51,7 +52,7 @@ export default function Feed({ userId }: FeedProps) {
       id: post.id,
       author: `@${post.author?.handle ?? 'usuario'}`,
       avatar: post.author?.avatar_url ?? `https://picsum.photos/seed/${post.id}/100/100`,
-      timestamp: new Date(post.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+      timestamp: timeAgo(post.created_at),
       content: post.body,
       image: post.post_media?.[0]?.media?.url ?? null,
       likes: post.likes_count ?? 0,
