@@ -1,9 +1,11 @@
+import type { View } from '../screens/Home'
+
 interface TabBarProps {
-  activeTab: string
-  setActiveTab: (tab: string) => void
+  activeTab: View
+  setActiveTab: (tab: View) => void
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { id: View; label: string; icon: string }[] = [
   { id: 'home', label: 'Home', icon: 'home' },
   { id: 'discover', label: 'Descobrir', icon: 'compass' },
   { id: 'messages', label: 'Mensagens', icon: 'chat' },

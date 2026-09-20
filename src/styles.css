@@ -157,3 +157,4 @@
 .hover\:bg-neutral-50:hover { background-color: var(--neutral-50); }
 .hover\:bg-neutral-100:hover { background-color: var(--neutral-100); }
 .hover\:text-accent-600:hover { color: var(--accent-600); }
+.hover\:text-neutral-900:hover { color: var(--neutral-900); }
